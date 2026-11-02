@@ -1,0 +1,44 @@
+name: Deploy PR previews
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - closed
+
+concurrency: preview-${{ github.ref }}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        if: github.event.action != 'closed'
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Build
+        if: github.event.action != 'closed'
+        run: |
+          pip install -r requirements-site.txt
+          python -m scripts.build_site
+        env:
+          API_URL: ${{ vars.API_URL }}
+
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: dist
+          preview-branch: gh-pages
+          pages-base-url: www.taylordorsett.com/moonbean_coffee
+          wait-for-pages-deployment: true
