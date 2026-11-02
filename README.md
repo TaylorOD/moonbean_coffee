@@ -60,6 +60,7 @@ uvicorn app.main:create_app --factory --port 8000
 Build and serve the site in another:
 
 ```
+.venv\Scripts\activate
 set API_URL=http://localhost:8000
 python -m scripts.build_site
 python -m http.server 8080 -d dist

@@ -1,3 +1,7 @@
+from types import SimpleNamespace
+
+import pytest
+
 from app import rag
 
 SECTIONS = [
@@ -54,6 +58,27 @@ def test_followups_search_with_the_previous_question(monkeypatch):
     ]
     list(rag.answer(messages))
     assert searched == ["free drink feathers and for beans?"]
+
+
+def fake_stream(monkeypatch, events):
+    client = SimpleNamespace(responses=SimpleNamespace(create=lambda **kwargs: iter(events)))
+    monkeypatch.setattr(rag, "openai_client", lambda: client)
+
+
+def test_stream_passes_text_through(monkeypatch):
+    fake_stream(monkeypatch, [SimpleNamespace(type="response.output_text.delta", delta="hi")])
+    assert list(rag.stream_deltas([], SECTIONS)) == ["hi"]
+
+
+@pytest.mark.parametrize("failure", ["response.failed", "error"])
+def test_failed_stream_raises_instead_of_ending_quietly(monkeypatch, failure):
+    events = [
+        SimpleNamespace(type="response.output_text.delta", delta="partial"),
+        SimpleNamespace(type=failure),
+    ]
+    fake_stream(monkeypatch, events)
+    with pytest.raises(RuntimeError):
+        list(rag.stream_deltas([], SECTIONS))
 
 
 def test_system_prompt_only_offers_retrieved_sections():
