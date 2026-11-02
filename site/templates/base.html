@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src {{ api_url or "'none'" }}; form-action 'none'; base-uri 'none'">
+  <title>{% block title %}Moonbean Coffee Roasters{% endblock %}</title>
+  <link rel="icon" href="static/moon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body class="{{ page }}-page">
+<header class="topbar">
+  <a class="brand" href="index.html">
+    <img src="static/moon.svg" alt="" width="28" height="28">
+    <span>Moonbean</span>
+  </a>
+  <nav class="tabs" aria-label="Main">
+    <a href="index.html" {% if page == "about" %}aria-current="page"{% endif %}>About</a>
+    <a href="handbook.html" {% if page == "handbook" %}aria-current="page"{% endif %}>Handbook</a>
+    <a href="ask.html" {% if page == "ask" %}aria-current="page"{% endif %}>Ask</a>
+  </nav>
+</header>
+{% block body %}{% endblock %}
+{% if page != "ask" %}
+<footer class="site-footer">
+  <img class="river" src="static/river.svg" alt="">
+  <div class="footer-body">
+    <p class="footer-motto">Slow mornings, loud flavors.</p>
+    <p>Missoula, Montana &middot; 46.87&deg; N, 113.99&deg; W &middot; Elev. 3,209 ft</p>
+    <p class="fine"><a href="index.html#fine-print">Fine print</a></p>
+  </div>
+</footer>
+{% endif %}
+</body>
+</html>

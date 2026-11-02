@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Beanhand Handbook | Moonbean{% endblock %}
+{% block body %}
+<div class="handbook">
+  <nav class="toc" aria-label="Handbook sections">
+    <h2>Beanhand Handbook</h2>
+    <ol>
+      {% for item in toc %}<li><a href="#{{ item.slug }}">{{ item.title }}</a></li>{% endfor %}
+    </ol>
+  </nav>
+  <article class="prose">
+    {{ html | safe }}
+  </article>
+</div>
+{% endblock %}
