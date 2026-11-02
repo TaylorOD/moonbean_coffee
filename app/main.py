@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import threading
 from typing import Annotated, Literal
 
 from dotenv import load_dotenv
@@ -50,6 +51,7 @@ def create_app():
     failed_overall = RateLimiter(30, FIFTEEN_MINUTES)
     chats_by_session = RateLimiter(int(os.getenv("MESSAGES_PER_MINUTE", "10")), 60)
     chats_overall = RateLimiter(int(os.getenv("MESSAGES_PER_DAY", "100")), ONE_DAY)
+    chat_admission = threading.Lock()
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(
@@ -89,12 +91,14 @@ def create_app():
         question = messages[-1]
         if question["role"] != "user" or len(question["content"]) > MAX_QUESTION_CHARS:
             raise HTTPException(422, f"Questions can be up to {MAX_QUESTION_CHARS} characters.")
-        if chats_overall.is_blocked("all"):
-            raise HTTPException(429, "Ask Moonbean has hit its daily limit. Try again tomorrow.")
-        if chats_by_session.is_blocked(sid):
-            raise HTTPException(429, "That's a lot of questions! Give it a minute.")
-        chats_overall.record("all")
-        chats_by_session.record(sid)
+        # One lock across both limits, so two requests can't take the same last slot
+        with chat_admission:
+            if chats_overall.is_blocked("all"):
+                raise HTTPException(429, "Ask Moonbean has hit its daily limit. Try again tomorrow.")
+            if chats_by_session.is_blocked(sid):
+                raise HTTPException(429, "That's a lot of questions! Give it a minute.")
+            chats_overall.record("all")
+            chats_by_session.record(sid)
 
         def events():
             try:

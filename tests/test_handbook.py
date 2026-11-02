@@ -1,4 +1,5 @@
 from app.handbook import read_handbook, slugify, to_records
+from scripts.upload_handbook import stale_ids
 
 
 def test_every_section_becomes_a_record():
@@ -20,3 +21,8 @@ def test_handbook_stays_in_universe():
     text = read_handbook().lower()
     for word in ["made up", "demo", "fictional"]:
         assert word not in text
+
+
+def test_renamed_sections_count_as_stale():
+    records = [{"id": "compensation"}, {"id": "dress-code"}]
+    assert stale_ids(["pay", "compensation", "dress-code"], records) == ["pay"]

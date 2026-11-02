@@ -81,6 +81,9 @@ def stream_deltas(messages, sections):
     for event in stream:
         if event.type == "response.output_text.delta":
             yield event.delta
+        elif event.type in ("response.failed", "error"):
+            # These arrive as stream events, not exceptions
+            raise RuntimeError(f"OpenAI stream failed: {event.type}")
 
 
 def answer_events(deltas, sections):
