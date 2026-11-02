@@ -1,8 +1,11 @@
 import json
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
+from fastapi.testclient import TestClient
 
 from app import auth, rag
+from app.main import create_app
 
 PASSWORD = "correct horse battery staple"
 
@@ -41,6 +44,31 @@ def test_right_password_gets_a_working_token(client, headers):
 
 def test_chat_rate_limit(client, headers):
     assert [ask(client, headers).status_code for _ in range(4)] == [200, 200, 200, 429]
+
+
+def test_daily_limit_cant_be_passed_by_requests_at_the_same_time(client, headers, monkeypatch):
+    monkeypatch.setenv("MESSAGES_PER_MINUTE", "1000")
+    monkeypatch.setenv("MESSAGES_PER_DAY", "5")
+    with TestClient(create_app()) as fresh:
+        token = fresh.post("/api/login", json={"password": PASSWORD}).json()["token"]
+        fresh_headers = {"Authorization": f"Bearer {token}"}
+        with ThreadPoolExecutor(max_workers=20) as pool:
+            responses = list(pool.map(lambda _: ask(fresh, fresh_headers), range(40)))
+    assert sorted(r.status_code for r in responses) == [200] * 5 + [429] * 35
+
+
+def test_being_rate_limited_doesnt_use_up_the_daily_limit(client, monkeypatch):
+    monkeypatch.setenv("MESSAGES_PER_MINUTE", "1")
+    monkeypatch.setenv("MESSAGES_PER_DAY", "2")
+    with TestClient(create_app()) as fresh:
+        def fresh_headers():
+            token = fresh.post("/api/login", json={"password": PASSWORD}).json()["token"]
+            return {"Authorization": f"Bearer {token}"}
+
+        first = fresh_headers()
+        assert ask(fresh, first).status_code == 200
+        assert ask(fresh, first).status_code == 429
+        assert ask(fresh, fresh_headers()).status_code == 200
 
 
 def test_long_question_is_rejected(client, headers):
