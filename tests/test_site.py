@@ -35,3 +35,11 @@ def test_csp_only_allows_the_api(site):
 def test_handbook_has_an_anchor_for_every_section(site):
     for slug in re.findall(r'<a href="#([^"]+)"', site["handbook.html"]):
         assert f'id="{slug}"' in site["handbook.html"]
+
+
+def test_story_stays_in_universe_until_the_fine_print(site):
+    about = site["index.html"]
+    before = about[: about.index('id="fine-print"')].lower()
+    for word in ["demo", "project", "llm", "chatbot", "not real", "isn't real"]:
+        assert word not in before
+    assert "moonbean isn't real" in about[about.index('id="fine-print"') :].lower()
