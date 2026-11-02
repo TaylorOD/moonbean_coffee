@@ -18,6 +18,11 @@ NAMESPACE = "handbook"
 BATCH_SIZE = 90  # Pinecone doesn't allow more than 96 records at once
 
 
+def stale_ids(existing, records):
+    """Sections that were renamed or removed, and shouldn't be searchable anymore."""
+    return sorted(set(existing) - {record["id"] for record in records})
+
+
 def main():
     pc = Pinecone(api_key=os.environ["PINECONE_API_KEY"])
 
@@ -37,7 +42,12 @@ def main():
     for start in range(0, len(records), BATCH_SIZE):
         index.upsert_records(namespace=NAMESPACE, records=records[start : start + BATCH_SIZE])
 
-    print(f"Uploaded {len(records)} sections to {INDEX_NAME}/{NAMESPACE}")
+    existing = [vector.id for page in index.list(namespace=NAMESPACE) for vector in page.vectors]
+    stale = stale_ids(existing, records)
+    if stale:
+        index.delete(namespace=NAMESPACE, ids=stale)
+
+    print(f"Uploaded {len(records)} sections to {INDEX_NAME}/{NAMESPACE}, removed {len(stale)} old ones")
 
 
 if __name__ == "__main__":
