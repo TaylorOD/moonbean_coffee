@@ -1,0 +1,38 @@
+name: Deploy site
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency: deploy-site
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Build
+        run: |
+          pip install -r requirements-site.txt
+          python -m scripts.build_site
+        env:
+          API_URL: ${{ vars.API_URL }}
+
+      - name: Deploy to gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages
+          clean-exclude: pr-preview/
+          force: false
