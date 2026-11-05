@@ -30,7 +30,19 @@ If the handbook doesn't cover something the bot is supposed to say so. It mostly
 
 ## What tech?
 
-The site is static HTML built with Python and Jinja, hosted on GitHub Pages like my other projects. The chat API is FastAPI, on its own server since a static site can't hold API keys.
+| Tech | What it does |
+| --- | --- |
+| Python | The API and the site build |
+| Jinja and Markdown | Turn the templates and handbook into a static site |
+| GitHub Pages | Hosts the site |
+| FastAPI and Uvicorn | The chat API, on its own server since a static site can't hold API keys |
+| OpenAI `gpt-4.1-mini` | Writes the answers |
+| Pinecone | Stores the handbook sections and searches them |
+| `llama-text-embed-v2` | The embedding model, run by Pinecone |
+| Render | Hosts the API |
+| Argon2id and itsdangerous | The password hash and signed logins |
+| GitHub Actions | Runs the tests, deploys the site and builds PR previews |
+| pytest | Tests |
 
 The password is hashed with Argon2id, so it isn't stored anywhere. Failed logins are limited, messages are limited per person and per day, and answers have a max length. All of that is so nobody can eat up my tokens.
 
