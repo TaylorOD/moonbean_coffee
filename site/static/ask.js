@@ -1,12 +1,5 @@
 const MAX_HISTORY = 12;
-const TOKEN_KEY = "moonbean_token";
-
 const API_URL = document.getElementById("ask").dataset.apiUrl;
-const gate = document.getElementById("gate");
-const chat = document.getElementById("chat");
-const loginForm = document.getElementById("login-form");
-const loginError = document.getElementById("login-error");
-const passwordInput = document.getElementById("password");
 const thread = document.getElementById("thread");
 const form = document.getElementById("composer");
 const input = document.getElementById("question");
@@ -15,74 +8,6 @@ const welcome = document.getElementById("welcome");
 
 const history = [];
 let busy = false;
-
-function getToken() {
-  try {
-    return sessionStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function setToken(token) {
-  try {
-    if (token) sessionStorage.setItem(TOKEN_KEY, token);
-    else sessionStorage.removeItem(TOKEN_KEY);
-  } catch {
-    // Without storage, a refresh just means logging in again
-  }
-}
-
-let token = getToken();
-
-function showChat() {
-  gate.hidden = true;
-  chat.hidden = false;
-  input.focus();
-}
-
-function showGate(message) {
-  token = null;
-  setToken(null);
-  chat.hidden = true;
-  gate.hidden = false;
-  if (message) showLoginError(message);
-  passwordInput.focus();
-}
-
-function showLoginError(message) {
-  loginError.textContent = message;
-  loginError.hidden = false;
-}
-
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-  loginError.hidden = true;
-  if (!API_URL) {
-    showLoginError("Ask Moonbean is closed for the moment. The handbook is still open.");
-    return;
-  }
-  try {
-    const response = await fetch(`${API_URL}/api/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: passwordInput.value }),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      showLoginError(data.detail);
-      return;
-    }
-    token = data.token;
-    setToken(token);
-    passwordInput.value = "";
-    showChat();
-  } catch {
-    showLoginError("Couldn't reach Ask Moonbean. It can take up to a minute to wake up, so try again shortly.");
-  }
-});
-
-document.getElementById("logout").addEventListener("click", () => showGate());
 
 function scrollToBottom() {
   thread.scrollTop = thread.scrollHeight;
@@ -210,17 +135,13 @@ async function ask(question) {
   };
 
   try {
+    if (!API_URL) throw new Error("Chat is not connected yet");
     const response = await fetch(`${API_URL}/api/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ messages: history.slice(-MAX_HISTORY) }),
     });
 
-    if (response.status === 401) {
-      setBusy(false);
-      showGate("Your session ran out. Please log in again.");
-      return;
-    }
     if (!response.ok) {
       const { detail } = await response.json();
       fail(typeof detail === "string" ? detail : "That message couldn't be sent.");
@@ -239,7 +160,7 @@ async function ask(question) {
       });
     }
   } catch {
-    fail("Couldn't reach the server. Check your connection and try again.");
+    fail(API_URL ? "Couldn't reach the server. It may take a minute to wake up. Please try again." : "Ask Moonbean is taking a break. You can still read the handbook.");
   }
 
   if (failed || !answer) {
@@ -278,6 +199,3 @@ input.addEventListener("keydown", (event) => {
 document.querySelectorAll("[data-question]").forEach((button) => {
   button.addEventListener("click", () => ask(button.dataset.question));
 });
-
-if (token) showChat();
-else passwordInput.focus();
