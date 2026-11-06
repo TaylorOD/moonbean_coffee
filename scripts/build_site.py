@@ -15,7 +15,12 @@ from app.handbook import read_handbook, slugify, to_records
 ROOT = Path(__file__).parent.parent
 SITE = ROOT / "site"
 DIST = ROOT / "dist"
-PAGES = {"index.html": "about", "handbook.html": "handbook", "ask.html": "ask"}
+PAGES = {
+    "index.html": "ask",
+    "about.html": "about",
+    "handbook.html": "handbook",
+    "ask.html": "ask",
+}
 
 
 def render_handbook(text):
@@ -36,7 +41,7 @@ def build(api_url=""):
     shutil.copytree(SITE / "static", DIST / "static")
     (DIST / ".nojekyll").touch()
     for filename, page in PAGES.items():
-        template = env.get_template(filename)
+        template = env.get_template(f"{page}.html")
         output = template.render(page=page, api_url=api_url, html=html, toc=toc)
         (DIST / filename).write_text(output, encoding="utf-8")
 
