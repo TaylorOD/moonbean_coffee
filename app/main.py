@@ -46,6 +46,7 @@ def create_app():
         allow_origins=origins,
         allow_methods=["POST"],
         allow_headers=["Content-Type"],
+        expose_headers=["X-Chat-Protocol"],
     )
 
     @app.post("/api/chat")
@@ -85,7 +86,8 @@ def create_app():
                 log.info("moonbean_request id=%s outcome=%s elapsed_ms=%d",
                          request_id, outcome, (time.monotonic() - started) * 1000)
 
-        return StreamingResponse(events(), media_type="application/x-ndjson")
+        return StreamingResponse(events(), media_type="application/x-ndjson",
+                                 headers={"X-Chat-Protocol": "2"})
 
     @app.get("/healthz")
     def health():
