@@ -361,6 +361,7 @@ figcaption { color: var(--ink-soft); font: italic 15px var(--serif); margin-top:
   border: 0;
   color: var(--ink);
   flex: 1;
+  min-width: 0;
   font: 16px/1.5 var(--sans);
   max-height: 160px;
   outline: 0;

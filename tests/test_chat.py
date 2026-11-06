@@ -85,9 +85,10 @@ def test_system_role_is_rejected(client):
 def test_chat_stream_format(client):
     lines = ask(client).text.strip().splitlines()
     assert json.loads(lines[0]) == {"type": "delta", "text": "hi"}
+    assert json.loads(lines[-1]) == {"type": "done"}
 
 
-def test_chat_failure_doesnt_leak_details(client, monkeypatch):
+def test_chat_failure_doesnt_leak_details(client, monkeypatch, caplog):
     def blow_up(messages):
         raise RuntimeError("secret key sk-123 failed")
         yield
@@ -96,3 +97,14 @@ def test_chat_failure_doesnt_leak_details(client, monkeypatch):
     body = ask(client).text
     assert "sk-123" not in body
     assert json.loads(body)["type"] == "error"
+    assert "sk-123" not in caplog.text
+
+
+def test_incomplete_answer_has_error_and_no_done(client, monkeypatch):
+    def incomplete(messages):
+        yield {"type": "delta", "text": "partial"}
+        raise rag.IncompleteAnswer()
+    monkeypatch.setattr(rag, "answer", incomplete)
+    events = [json.loads(line) for line in ask(client).text.splitlines()]
+    assert events[-1]["code"] == "incomplete"
+    assert not any(event["type"] == "done" for event in events)
