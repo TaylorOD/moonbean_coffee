@@ -26,6 +26,17 @@ test("partial text without done is an error", async () => {
   await assert.rejects(requestAnswer(options('{"type":"delta","text":"partial"}\n')), { code: "incomplete" });
 });
 
+test("new protocol requires done after sources", async () => {
+  const opts = options();
+  opts.fetchImpl = async () => new Response('{"type":"sources","sections":[]}\n',
+    { headers: { "X-Chat-Protocol": "2" } });
+  await assert.rejects(requestAnswer(opts), { code: "incomplete" });
+});
+
+test("old API sources can finish during a rolling deployment", async () => {
+  await requestAnswer(options('{"type":"delta","text":"hi"}\n{"type":"sources","sections":[]}\n'));
+});
+
 test("provider budget message survives the stream", async () => {
   await assert.rejects(requestAnswer(options('{"type":"error","code":"budget","message":"Allowance used"}\n')),
     { code: "budget", message: "Allowance used" });

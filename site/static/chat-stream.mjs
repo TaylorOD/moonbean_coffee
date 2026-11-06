@@ -34,6 +34,7 @@ export async function requestAnswer({ apiUrl, messages, signal, onEvent, onWaiti
         "Ask is unavailable right now. Please try again later or read the handbook.");
     }
     reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+    const requiresDone = response.headers.get("X-Chat-Protocol") === "2";
     let buffer = "";
     function consume(line) {
       if (!line.trim()) return;
@@ -41,6 +42,8 @@ export async function requestAnswer({ apiUrl, messages, signal, onEvent, onWaiti
       if (event.type === "error") throw new ChatError(event.code, event.message);
       if (event.type === "done") complete = true;
       else onEvent(event);
+      // Allow the previous API to finish with sources during a staggered deployment.
+      if (event.type === "sources" && !requiresDone) complete = true;
     }
     while (!complete) {
       const { value, done } = await reader.read();
