@@ -43,7 +43,7 @@ If the handbook doesn't cover something the bot is supposed to say so. It mostly
 | GitHub Actions | Runs the tests, deploys the site and builds PR previews |
 | pytest | Tests |
 
-The API allows 10 messages per IP each minute, 20 total each minute, and 100 total per rolling day. Questions and answers have a max length too. These counters reset when the server restarts and need a single server process. The monthly OpenAI limit is set separately in the dashboard. CORS only controls browsers, so it is not an access restriction.
+The API allows 20 messages each minute and 100 per rolling day, shared by everyone. It does not trust forwarded addresses for a per person limit. Questions and answers have a max length too. These counters reset when the server restarts and need a single server process. The monthly OpenAI limit is set separately in the dashboard. CORS only controls browsers, so it is not an access restriction.
 
 ## Running it
 

@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 
 from app import rag
 from app.main import create_app
+from app.limits import RateLimiter
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 @pytest.fixture(autouse=True)
 def fake_answer(monkeypatch):
@@ -27,7 +29,6 @@ def test_chat_rate_limit(client):
 
 
 def test_daily_limit_cant_be_passed_by_requests_at_the_same_time(client, monkeypatch):
-    monkeypatch.setenv("MESSAGES_PER_MINUTE", "1000")
     monkeypatch.setenv("MESSAGES_PER_DAY", "5")
     monkeypatch.setenv("TOTAL_MESSAGES_PER_MINUTE", "1000")
     with TestClient(create_app()) as fresh:
@@ -37,15 +38,17 @@ def test_daily_limit_cant_be_passed_by_requests_at_the_same_time(client, monkeyp
 
 
 def test_being_rate_limited_doesnt_use_up_the_daily_limit(client, monkeypatch):
-    monkeypatch.setenv("MESSAGES_PER_MINUTE", "1")
+    now = [0]
+    monkeypatch.setattr("app.main.RateLimiter", lambda limit, window: RateLimiter(limit, window, clock=lambda: now[0]))
+    monkeypatch.setenv("TOTAL_MESSAGES_PER_MINUTE", "1")
     monkeypatch.setenv("MESSAGES_PER_DAY", "2")
     with TestClient(create_app()) as fresh:
         assert ask(fresh).status_code == 200
         assert ask(fresh).status_code == 429
-        # Another client gets its own IP allowance, without resetting the global budget.
-        with TestClient(fresh.app, client=("192.0.2.2", 50000)) as second:
-            assert ask(second).status_code == 200
-            assert ask(second).status_code == 429
+        now[0] = 61
+        assert ask(fresh).status_code == 200
+        now[0] = 122
+        assert ask(fresh).status_code == 429
 
 
 def test_global_minute_limit_applies_across_clients(monkeypatch):
@@ -57,10 +60,14 @@ def test_global_minute_limit_applies_across_clients(monkeypatch):
         assert ask(second).status_code == 429
 
 
-def test_forwarded_header_cannot_reset_ip_limit(client):
-    for i in range(3):
-        assert ask(client, {"X-Forwarded-For": f"192.0.2.{i}"}).status_code == 200
-    assert ask(client, {"X-Forwarded-For": "192.0.2.100"}).status_code == 429
+def test_forwarded_addresses_cannot_reset_shared_limits(monkeypatch):
+    monkeypatch.setenv("TOTAL_MESSAGES_PER_MINUTE", "3")
+    # Exercise Uvicorn's real header processing, which the old TestClient check skipped.
+    app = ProxyHeadersMiddleware(create_app(), trusted_hosts="*")
+    with TestClient(app) as client:
+        for i in range(3):
+            assert ask(client, {"X-Forwarded-For": f"192.0.2.{i}"}).status_code == 200
+        assert ask(client, {"X-Forwarded-For": "192.0.2.100"}).status_code == 429
 
 
 def test_long_question_is_rejected(client):
