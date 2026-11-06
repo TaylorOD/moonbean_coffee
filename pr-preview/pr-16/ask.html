@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src https://moonbean-api.onrender.com; form-action 'none'; base-uri 'none'">
+  <title>Ask Moonbean</title>
+  <link rel="icon" href="static/moon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="static/style.css">
+</head>
+<body class="ask-page">
+<header class="topbar">
+  <a class="brand" href="index.html">
+    <img src="static/moon.svg" alt="" width="28" height="28">
+    <span>Moonbean</span>
+  </a>
+  <nav class="tabs" aria-label="Main">
+    <a href="index.html" aria-current="page">Ask</a>
+    <a href="about.html" >About</a>
+    <a href="handbook.html" >Handbook</a>
+  </nav>
+</header>
+
+<main class="ask" id="ask" data-api-url="https://moonbean-api.onrender.com">
+  <section class="chat" id="chat">
+    <div class="thread" id="thread" aria-live="polite">
+      <div class="welcome" id="welcome">
+        <img src="static/moon.svg" alt="" width="52" height="52">
+        <h1>Ask Moonbean.</h1>
+        <p>Questions about working at Moonbean? Ask here. Answers are based on the Beanhand handbook, with links to the sections used.</p>
+        <p class="welcome-links"><a href="handbook.html">Read the handbook</a><span aria-hidden="true"> &middot; </span><a href="about.html">Meet Moonbean</a></p>
+        <div class="suggestions">
+          <button type="button" data-question="Can I bring my dog inside the Hip Strip cafe?">Can I bring my dog inside the Hip Strip cafe?</button>
+          <button type="button" data-question="What happens on Float Day?">What happens on Float Day?</button>
+          <button type="button" data-question="How do I become a Senior Barista?">How do I become a Senior Barista?</button>
+          <button type="button" data-question="What do I do if there's a bear on the patio?">What do I do if there's a bear on the patio?</button>
+        </div>
+      </div>
+    </div>
+    <form class="composer" id="composer">
+      <div class="composer-box">
+        <label class="visually-hidden" for="question">Your question</label>
+        <textarea id="question" rows="1" maxlength="1000" placeholder="Ask about pay, shifts, Float Day..." required></textarea>
+        <button class="button send" id="send" type="submit">Ask</button>
+        <button class="button ghost send" id="stop" type="button" hidden>Stop</button>
+      </div>
+      <p class="fine-line">Ask Moonbean can make mistakes. For anything urgent, call your Moon Manager.</p>
+      <p class="fine-line">The first answer may take a minute while the server wakes up. Please leave out personal information.</p>
+    </form>
+  </section>
+</main>
+<script type="module" src="static/ask.js"></script>
+
+
+</body>
+</html>
