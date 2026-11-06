@@ -279,47 +279,6 @@ figcaption { color: var(--ink-soft); font: italic 15px var(--serif); margin-top:
 /* Ask */
 .ask-page { display: flex; flex-direction: column; height: 100dvh; }
 .ask { display: flex; flex: 1; flex-direction: column; min-height: 0; }
-.gate {
-  align-items: center;
-  background: var(--river);
-  color: var(--cream);
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  justify-content: center;
-  overflow-y: auto;
-  padding: 24px 16px 96px;
-  position: relative;
-  text-align: center;
-}
-.gate h1 { font-size: 38px; margin: 0 0 6px; }
-.gate-copy { color: #c9d7da; margin: 0 0 22px; max-width: 420px; }
-.gate-card {
-  background: var(--paper);
-  border-radius: 12px;
-  color: var(--ink);
-  max-width: 380px;
-  padding: 24px;
-  position: relative;
-  text-align: left;
-  width: 100%;
-  z-index: 1;
-}
-.gate-card label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
-.gate-card input {
-  background: #fff;
-  border: 1px solid #a9b4b6;
-  border-radius: 8px;
-  color: var(--ink);
-  font: 16px var(--sans);
-  padding: 10px 12px;
-  width: 100%;
-}
-.gate-card .button { margin-top: 16px; width: 100%; }
-.gate-help { color: #c9d7da; font-size: 14px; margin: 18px 0 0; position: relative; z-index: 1; }
-.gate-help a { color: #f3c583; }
-.gate-river { bottom: 0; left: 0; opacity: .55; pointer-events: none; position: absolute; }
-
 .chat { display: flex; flex: 1; flex-direction: column; min-height: 0; }
 .thread { flex: 1; overflow-y: auto; padding: 28px 16px 12px; }
 .welcome { margin: 4vh auto 0; max-width: 620px; text-align: center; }
@@ -427,5 +386,4 @@ figcaption { color: var(--ink-soft); font: italic 15px var(--serif); margin-top:
   .welcome h1 { font-size: 28px; }
   .hero-text { bottom: 76px; }
   .river { height: 46px; }
-  .gate { padding-bottom: 70px; }
 }
