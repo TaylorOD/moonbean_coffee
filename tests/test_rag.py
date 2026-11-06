@@ -61,24 +61,50 @@ def test_followups_search_with_the_previous_question(monkeypatch):
 
 
 def fake_stream(monkeypatch, events):
-    client = SimpleNamespace(responses=SimpleNamespace(create=lambda **kwargs: iter(events)))
+    def stream():
+        yield from events
+    client = SimpleNamespace(responses=SimpleNamespace(create=lambda **kwargs: stream()))
     monkeypatch.setattr(rag, "openai_client", lambda: client)
 
 
 def test_stream_passes_text_through(monkeypatch):
-    fake_stream(monkeypatch, [SimpleNamespace(type="response.output_text.delta", delta="hi")])
+    fake_stream(monkeypatch, [SimpleNamespace(type="response.output_text.delta", delta="hi"),
+                             SimpleNamespace(type="response.completed", response=SimpleNamespace(usage=None))])
     assert list(rag.stream_deltas([], SECTIONS)) == ["hi"]
 
 
-@pytest.mark.parametrize("failure", ["response.failed", "error"])
+@pytest.mark.parametrize("failure", ["response.failed", "response.incomplete", "error"])
 def test_failed_stream_raises_instead_of_ending_quietly(monkeypatch, failure):
     events = [
         SimpleNamespace(type="response.output_text.delta", delta="partial"),
         SimpleNamespace(type=failure),
     ]
     fake_stream(monkeypatch, events)
-    with pytest.raises(RuntimeError):
+    with pytest.raises(rag.IncompleteAnswer):
         list(rag.stream_deltas([], SECTIONS))
+
+
+def test_missing_terminal_event_is_not_a_complete_answer(monkeypatch):
+    fake_stream(monkeypatch, [SimpleNamespace(type="response.output_text.delta", delta="partial")])
+    with pytest.raises(rag.IncompleteAnswer):
+        list(rag.stream_deltas([], SECTIONS))
+
+
+def test_stream_closes_and_does_not_store_responses(monkeypatch):
+    calls = []
+    closed = []
+    def stream():
+        try:
+            yield SimpleNamespace(type="response.completed", response=SimpleNamespace(usage=None))
+        finally:
+            closed.append(True)
+    def create(**kwargs):
+        calls.append(kwargs)
+        return stream()
+    monkeypatch.setattr(rag, "openai_client", lambda: SimpleNamespace(responses=SimpleNamespace(create=create)))
+    list(rag.stream_deltas([], SECTIONS))
+    assert calls[0]["store"] is False
+    assert closed == [True]
 
 
 def test_system_prompt_only_offers_retrieved_sections():

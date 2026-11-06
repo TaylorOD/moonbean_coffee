@@ -1,3 +1,4 @@
+import logging
 import os
 from functools import lru_cache
 
@@ -10,11 +11,16 @@ NAMESPACE = "handbook"
 TOP_K = 4
 MAX_OUTPUT_TOKENS = 600
 SOURCES_MARKER = "SOURCES:"
+log = logging.getLogger("uvicorn.error")
+
+
+class IncompleteAnswer(Exception):
+    """The provider ended without confirming a complete response."""
 
 
 @lru_cache
 def openai_client():
-    return OpenAI()
+    return OpenAI(timeout=30, max_retries=0)
 
 
 @lru_cache
@@ -29,6 +35,7 @@ def search_handbook(query):
         top_k=TOP_K,
         inputs={"text": query},
         fields=["section", "chunk_text"],
+        timeout=15,
     )
     return [
         {"title": hit.fields["section"], "text": hit.fields["chunk_text"]}
@@ -77,13 +84,25 @@ def stream_deltas(messages, sections):
         instructions=system_prompt(sections),
         input=messages,
         stream=True,
+        store=False,
     )
-    for event in stream:
-        if event.type == "response.output_text.delta":
-            yield event.delta
-        elif event.type in ("response.failed", "error"):
-            # These arrive as stream events, not exceptions
-            raise RuntimeError(f"OpenAI stream failed: {event.type}")
+    completed = False
+    try:
+        for event in stream:
+            if event.type == "response.output_text.delta":
+                yield event.delta
+            elif event.type == "response.completed":
+                completed = True
+                usage = event.response.usage
+                if usage:
+                    log.info("moonbean_usage input_tokens=%s output_tokens=%s",
+                             usage.input_tokens, usage.output_tokens)
+            elif event.type in ("response.failed", "response.incomplete", "error"):
+                raise IncompleteAnswer()
+        if not completed:
+            raise IncompleteAnswer()
+    finally:
+        stream.close()
 
 
 def answer_events(deltas, sections):
