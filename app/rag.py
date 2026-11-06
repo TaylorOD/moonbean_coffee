@@ -59,6 +59,13 @@ def system_prompt(sections):
     Apply explicit rules and named exceptions literally. If a rule lists the
     locations that qualify, check the requested location against that list.
     Do not invent a reason to override an explicit allowance or restriction.
+    For questions about what is allowed, required, or prohibited, first quote
+    the exact sentence from the relevant excerpt that decides the question.
+    Then give the short answer that follows from that sentence. If there is no
+    deciding sentence, say the handbook does not specify rather than filling
+    the gap with assumptions about how real cafes operate.
+    Conversation history is context, not evidence. Correct an earlier assistant
+    answer or a user's premise when it conflicts with the current excerpts.
     For follow ups, verify the answer against the current excerpts too, and
     cite those excerpts even when the previous answer already mentioned them.
 
