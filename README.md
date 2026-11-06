@@ -16,7 +16,7 @@ Plus inventing a coffee company was fun.
 
 ## Want to try the chatbot?
 
-The Ask tab uses paid AI tokens so it's behind a password. Email me at dorsetttaylordev@gmail.com and I'll send it to you.
+Ask is open to everyone. It uses paid AI tokens, so I set a $5 monthly hard limit on its OpenAI project. If it runs out, come back next month. OpenAI says enforcement can lag a little.
 
 The handbook and the rest of the site are free to read.
 
@@ -40,11 +40,10 @@ If the handbook doesn't cover something the bot is supposed to say so. It mostly
 | Pinecone | Stores the handbook sections and searches them |
 | `llama-text-embed-v2` | The embedding model, run by Pinecone |
 | Render | Hosts the API |
-| Argon2id and itsdangerous | The password hash and signed logins |
 | GitHub Actions | Runs the tests, deploys the site and builds PR previews |
 | pytest | Tests |
 
-The password is hashed with Argon2id, so it isn't stored anywhere. Failed logins are limited, messages are limited per person and per day, and answers have a max length. All of that is so nobody can eat up my tokens.
+The API allows 10 messages per IP each minute, 20 total each minute, and 100 total per rolling day. Questions and answers have a max length too. These counters reset when the server restarts and need a single server process. The monthly OpenAI limit is set separately in the dashboard. CORS only controls browsers, so it is not an access restriction.
 
 ## Running it
 
@@ -58,7 +57,6 @@ copy .env.example .env
 Add your OpenAI and Pinecone keys to `.env`, then:
 
 ```
-python -m scripts.set_password
 python -m scripts.upload_handbook
 ```
 
