@@ -7,7 +7,7 @@ import uuid
 from typing import Literal
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, Field
@@ -35,7 +35,6 @@ def create_app():
     load_dotenv()
     origins = os.getenv("ALLOWED_ORIGINS", "https://www.taylordorsett.com").split(",")
 
-    chats_by_ip = RateLimiter(int(os.getenv("MESSAGES_PER_MINUTE", "10")), 60)
     chats_overall = RateLimiter(int(os.getenv("MESSAGES_PER_DAY", "100")), ONE_DAY)
     chats_per_minute = RateLimiter(int(os.getenv("TOTAL_MESSAGES_PER_MINUTE", "20")), 60)
     chat_admission = threading.Lock()
@@ -50,8 +49,7 @@ def create_app():
     )
 
     @app.post("/api/chat")
-    def chat(body: ChatRequest, request: Request):
-        ip = request.client.host if request.client else "unknown"
+    def chat(body: ChatRequest):
         messages = [turn.model_dump() for turn in body.messages]
         question = messages[-1]
         if question["role"] != "user" or len(question["content"]) > MAX_QUESTION_CHARS:
@@ -62,11 +60,8 @@ def create_app():
                 raise HTTPException(429, "Ask Moonbean has hit its daily limit. Try again tomorrow.")
             if chats_per_minute.is_blocked("all"):
                 raise HTTPException(429, "Moonbean is busy right now. Give it a minute.")
-            if chats_by_ip.is_blocked(ip):
-                raise HTTPException(429, "That's a lot of questions! Give it a minute.")
             chats_overall.record("all")
             chats_per_minute.record("all")
-            chats_by_ip.record(ip)
 
         def events():
             request_id = uuid.uuid4().hex[:12]
