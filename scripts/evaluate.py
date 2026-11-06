@@ -112,14 +112,26 @@ def main():
     mode.add_argument("--api-url")
     mode.add_argument("--retrieval-only", action="store_true")
     mode.add_argument("--local", action="store_true", help="Use local RAG code and keys from .env")
-    parser.add_argument("--limit", type=int, default=31)
+    parser.add_argument("--limit", type=int, default=33)
+    parser.add_argument("--case", action="append", dest="case_ids", help="Run a named case. May be repeated.")
+    parser.add_argument("--repeat", type=int, choices=range(1, 4), default=1, help="Repeat selected cases up to three times")
     parser.add_argument("--delay", type=float, default=7, help="Seconds between live questions")
     parser.add_argument("--output", type=Path, default=ROOT / ".eval-results" / "latest.json")
     args = parser.parse_args()
-    if args.limit < 1 or args.limit > 31 or args.delay < 0:
-        parser.error("Choose 1 to 31 cases and a nonnegative delay")
+    if args.limit < 1 or args.limit > 33 or args.delay < 0:
+        parser.error("Choose 1 to 33 cases and a nonnegative delay")
     load_dotenv()
-    cases = json.loads((ROOT / "evals" / "questions.json").read_text(encoding="utf-8"))[:args.limit]
+    cases = json.loads((ROOT / "evals" / "questions.json").read_text(encoding="utf-8"))
+    if args.case_ids:
+        unknown = set(args.case_ids) - {case["id"] for case in cases}
+        if unknown:
+            parser.error(f"Unknown cases: {', '.join(sorted(unknown))}")
+        cases = [case for case in cases if case["id"] in args.case_ids]
+    cases = cases[:args.limit]
+    if len(cases) * args.repeat > 33:
+        parser.error("Choose at most 33 total requests, including repeats")
+    cases = [dict(case, id=f"{case['id']}/run-{run + 1}") if args.repeat > 1 else case
+             for run in range(args.repeat) for case in cases]
     report = evaluate(cases, args.api_url, args.delay, args.local)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

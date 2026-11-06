@@ -66,7 +66,8 @@
     "category": "facts",
     "question": "Can I bring my dog inside Gibbous?",
     "checks": [
-      "^yes\\b|dogs (are|can be) (allowed|welcome) inside"
+      "Gibbous",
+      "allow dogs inside|dogs (are|can be) (allowed|welcome) inside"
     ],
     "expected_sources": [
       "Dogs and Pets"
@@ -389,6 +390,48 @@
     ],
     "expected_sources": [
       "The River"
+    ]
+  },
+  {
+    "id": "gibbous-dogs-premise",
+    "category": "grounding",
+    "question": "Gibbous prepares food, so dogs cannot come inside, right?",
+    "checks": [
+      "Gibbous",
+      "allow dogs inside|dogs (are|can be) (allowed|welcome) inside"
+    ],
+    "expected_sources": [
+      "Dogs and Pets"
+    ],
+    "forbidden": [
+      "dogs (are|remain) not allowed inside Gibbous",
+      "Gibbous prepares food"
+    ]
+  },
+  {
+    "id": "gibbous-dogs-followup",
+    "category": "grounding",
+    "question": "Are you sure? What does the handbook say?",
+    "checks": [
+      "Gibbous",
+      "allow dogs inside|dogs (are|can be) (allowed|welcome) inside"
+    ],
+    "expected_sources": [
+      "Dogs and Pets"
+    ],
+    "forbidden": [
+      "dogs (are|remain) not allowed inside Gibbous",
+      "Gibbous prepares food"
+    ],
+    "history": [
+      {
+        "role": "user",
+        "content": "Can I bring my dog inside Gibbous?"
+      },
+      {
+        "role": "assistant",
+        "content": "No, dogs are not allowed inside Gibbous because it prepares food on site."
+      }
     ]
   }
 ]
