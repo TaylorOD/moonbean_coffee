@@ -2,6 +2,8 @@ import json
 import logging
 import os
 import threading
+import time
+import uuid
 from typing import Literal
 
 from dotenv import load_dotenv
@@ -12,8 +14,9 @@ from pydantic import BaseModel, Field
 
 from app import rag
 from app.limits import RateLimiter
+from app.errors import public_error
 
-log = logging.getLogger("moonbean")
+log = logging.getLogger("uvicorn.error")
 
 MAX_QUESTION_CHARS = 1000
 ONE_DAY = 24 * 60 * 60
@@ -43,6 +46,7 @@ def create_app():
         allow_origins=origins,
         allow_methods=["POST"],
         allow_headers=["Content-Type"],
+        expose_headers=["X-Chat-Protocol"],
     )
 
     @app.post("/api/chat")
@@ -65,15 +69,25 @@ def create_app():
             chats_by_ip.record(ip)
 
         def events():
+            request_id = uuid.uuid4().hex[:12]
+            started = time.monotonic()
+            outcome = "disconnected"
             try:
                 for event in rag.answer(messages):
                     yield json.dumps(event) + "\n"
-            except Exception:
-                log.exception("Chat failed")
-                message = "Something went wrong on our end. Please try again."
-                yield json.dumps({"type": "error", "message": message}) + "\n"
+                outcome = "complete"
+                yield json.dumps({"type": "done"}) + "\n"
+            except Exception as error:
+                outcome, message = public_error(error)
+                yield json.dumps({"type": "error", "code": outcome,
+                                  "message": message, "request_id": request_id}) + "\n"
+            finally:
+                # Do not log prompts, answers, IPs or provider exception bodies.
+                log.info("moonbean_request id=%s outcome=%s elapsed_ms=%d",
+                         request_id, outcome, (time.monotonic() - started) * 1000)
 
-        return StreamingResponse(events(), media_type="application/x-ndjson")
+        return StreamingResponse(events(), media_type="application/x-ndjson",
+                                 headers={"X-Chat-Protocol": "2"})
 
     @app.get("/healthz")
     def health():

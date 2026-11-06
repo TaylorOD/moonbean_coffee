@@ -1,9 +1,13 @@
+import { requestAnswer } from "./chat-stream.mjs";
+
 const MAX_HISTORY = 12;
 const API_URL = document.getElementById("ask").dataset.apiUrl;
 const thread = document.getElementById("thread");
 const form = document.getElementById("composer");
 const input = document.getElementById("question");
 const send = document.getElementById("send");
+const stop = document.getElementById("stop");
+let activeRequest;
 const welcome = document.getElementById("welcome");
 
 const history = [];
@@ -95,19 +99,8 @@ function showSources(message, sections) {
 function setBusy(value) {
   busy = value;
   send.disabled = value;
-}
-
-async function readEvents(response, onEvent) {
-  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
-  let buffer = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    if (done) break;
-    buffer += value;
-    const lines = buffer.split("\n");
-    buffer = lines.pop();
-    lines.filter(Boolean).forEach((line) => onEvent(JSON.parse(line)));
-  }
+  send.hidden = value;
+  stop.hidden = !value;
 }
 
 async function ask(question) {
@@ -134,19 +127,16 @@ async function ask(question) {
     showError(body, text);
   };
 
+  activeRequest = new AbortController();
   try {
-    if (!API_URL) throw new Error("Chat is not connected yet");
-    const response = await fetch(`${API_URL}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: history.slice(-MAX_HISTORY) }),
-    });
-
-    if (!response.ok) {
-      const { detail } = await response.json();
-      fail(typeof detail === "string" ? detail : "That message couldn't be sent.");
-    } else {
-      await readEvents(response, (event) => {
+    await requestAnswer({
+      apiUrl: API_URL,
+      messages: history.slice(-MAX_HISTORY),
+      signal: activeRequest.signal,
+      onWaiting: () => {
+        if (!answer) body.textContent = "The server may be waking up. This can take about a minute";
+      },
+      onEvent: (event) => {
         if (event.type === "delta") {
           answer += event.text;
           body.classList.remove("thinking");
@@ -154,13 +144,17 @@ async function ask(question) {
           scrollToBottom();
         } else if (event.type === "sources") {
           showSources(message, event.sections);
-        } else if (event.type === "error") {
-          fail(event.message);
         }
-      });
+      },
+    });
+  } catch (error) {
+    fail(error.message);
+    if (!input.value) {
+      input.value = question;
+      resizeInput();
     }
-  } catch {
-    fail(API_URL ? "Couldn't reach the server. It may take a minute to wake up. Please try again." : "Ask Moonbean is taking a break. You can still read the handbook.");
+  } finally {
+    activeRequest = null;
   }
 
   if (failed || !answer) {
@@ -181,6 +175,7 @@ function resizeInput() {
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
+  if (busy || !input.value.trim()) return;
   const question = input.value;
   input.value = "";
   resizeInput();
@@ -199,3 +194,5 @@ input.addEventListener("keydown", (event) => {
 document.querySelectorAll("[data-question]").forEach((button) => {
   button.addEventListener("click", () => ask(button.dataset.question));
 });
+
+stop.addEventListener("click", () => activeRequest?.abort());
