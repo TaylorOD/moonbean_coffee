@@ -2,20 +2,7 @@
 {% block title %}Ask Moonbean{% endblock %}
 {% block body %}
 <main class="ask" id="ask" data-api-url="{{ api_url }}">
-  <section class="gate" id="gate">
-    <h1>Ask Moonbean</h1>
-    <p class="gate-copy">Beanhands, this one's yours. Grab the password from your Moon Manager.</p>
-    <form class="gate-card" id="login-form">
-      <label for="password">Password</label>
-      <input id="password" type="password" autocomplete="current-password" required>
-      <p class="form-error" id="login-error" role="alert" hidden></p>
-      <button class="button" type="submit">Log in</button>
-    </form>
-    <p class="gate-help">Not a Beanhand? Check the <a href="index.html#fine-print">fine print</a>, or just <a href="handbook.html">read the handbook</a>.</p>
-    <img class="river gate-river" src="static/river.svg" alt="">
-  </section>
-
-  <section class="chat" id="chat" hidden>
+  <section class="chat" id="chat">
     <div class="thread" id="thread" aria-live="polite">
       <div class="welcome" id="welcome">
         <img src="static/moon.svg" alt="" width="52" height="52">
@@ -35,7 +22,7 @@
         <textarea id="question" rows="1" maxlength="1000" placeholder="Ask about pay, shifts, Float Day..." required></textarea>
         <button class="button send" id="send" type="submit">Ask</button>
       </div>
-      <p class="fine-line">Ask Moonbean can make mistakes. For anything urgent, call your Moon Manager. <button class="link-button" id="logout" type="button">Log out</button></p>
+      <p class="fine-line">Ask Moonbean can make mistakes. For anything urgent, call your Moon Manager.</p>
     </form>
   </section>
 </main>
