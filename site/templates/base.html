@@ -16,9 +16,9 @@
     <span>Moonbean</span>
   </a>
   <nav class="tabs" aria-label="Main">
-    <a href="index.html" {% if page == "about" %}aria-current="page"{% endif %}>About</a>
+    <a href="index.html" {% if page == "ask" %}aria-current="page"{% endif %}>Ask</a>
+    <a href="about.html" {% if page == "about" %}aria-current="page"{% endif %}>About</a>
     <a href="handbook.html" {% if page == "handbook" %}aria-current="page"{% endif %}>Handbook</a>
-    <a href="ask.html" {% if page == "ask" %}aria-current="page"{% endif %}>Ask</a>
   </nav>
 </header>
 {% block body %}{% endblock %}
@@ -28,7 +28,7 @@
   <div class="footer-body">
     <p class="footer-motto">Slow mornings, loud flavors.</p>
     <p>Missoula, Montana &middot; 46.87&deg; N, 113.99&deg; W &middot; Elev. 3,209 ft</p>
-    <p class="fine"><a href="index.html#fine-print">Fine print</a></p>
+    <p class="fine"><a href="about.html#fine-print">Fine print</a></p>
   </div>
 </footer>
 {% endif %}
