@@ -6,7 +6,7 @@ Moonbean Coffee Roasters is a coffee company in Missoula, Montana. It has 7 cafe
 
 I made up the whole company so I could build a real chatbot on top of it. You can read about it at [the Moonbean site](https://www.taylordorsett.com/moonbean_coffee/) and read the full employee handbook there too.
 
-![The Ask Moonbean page](docs/screenshots/ask.jpg)
+![The Moonbean About page](docs/screenshots/about.jpg)
 
 ## Why?
 
@@ -17,6 +17,8 @@ An employee handbook bot is a good test. The answers have to come from one speci
 Plus inventing a coffee company was fun.
 
 ## Want to try the chatbot?
+
+![The Ask Moonbean page](docs/screenshots/ask.jpg)
 
 Ask is open to everyone. It uses paid AI tokens, so I set a $5 monthly hard limit on its OpenAI project. If it runs out, come back next month. OpenAI says enforcement can lag a little.
 
