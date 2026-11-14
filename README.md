@@ -6,6 +6,8 @@ Moonbean Coffee Roasters is a coffee company in Missoula, Montana. It has 7 cafe
 
 I made up the whole company so I could build a real chatbot on top of it. You can read about it at [the Moonbean site](https://www.taylordorsett.com/moonbean_coffee/) and read the full employee handbook there too.
 
+![The Moonbean About page](docs/screenshots/about.jpg)
+
 ## Why?
 
 I am building LLMs and LLM projects, and I wanted one that felt like something a real company would use.
@@ -15,6 +17,8 @@ An employee handbook bot is a good test. The answers have to come from one speci
 Plus inventing a coffee company was fun.
 
 ## Want to try the chatbot?
+
+![The Ask Moonbean page](docs/screenshots/ask.jpg)
 
 Ask is open to everyone. It uses paid AI tokens, so I set a $5 monthly hard limit on its OpenAI project. If it runs out, come back next month. OpenAI says enforcement can lag a little.
 
@@ -134,3 +138,7 @@ This is built to be a small public demo. A real employee handbook system would a
 [Clark Fork, Missoula](https://commons.wikimedia.org/wiki/File:Clark_fork_Missoula_river.jpg) by Jon Sullivan, public domain
 
 [Meadow Creek Fly Fishing](https://commons.wikimedia.org/wiki/File:Meadow_Creek_Fly_Fishing_(9191405295).jpg) by the US Forest Service Northern Region, public domain
+
+## License
+
+The code is MIT licensed. The photos keep their own licenses, listed above.
