@@ -6,7 +6,7 @@ from fastapi.testclient import TestClient
 
 from app import rag
 from app.main import create_app
-from app.limits import RateLimiter
+from app.budget import MemoryBudget
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 @pytest.fixture(autouse=True)
@@ -39,7 +39,7 @@ def test_daily_limit_cant_be_passed_by_requests_at_the_same_time(client, monkeyp
 
 def test_being_rate_limited_doesnt_use_up_the_daily_limit(client, monkeypatch):
     now = [0]
-    monkeypatch.setattr("app.main.RateLimiter", lambda limit, window: RateLimiter(limit, window, clock=lambda: now[0]))
+    monkeypatch.setattr("app.main.create_budget", lambda _: MemoryBudget(clock=lambda: now[0]))
     monkeypatch.setenv("TOTAL_MESSAGES_PER_MINUTE", "1")
     monkeypatch.setenv("MESSAGES_PER_DAY", "2")
     with TestClient(create_app()) as fresh:

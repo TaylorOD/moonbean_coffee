@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import threading
 import time
 import uuid
 from typing import Literal
@@ -13,7 +12,7 @@ from fastapi.responses import PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app import rag
-from app.limits import RateLimiter
+from app.budget import BudgetUnavailable, create_budget
 from app.errors import public_error
 
 log = logging.getLogger("uvicorn.error")
@@ -35,9 +34,9 @@ def create_app():
     load_dotenv()
     origins = os.getenv("ALLOWED_ORIGINS", "https://www.taylordorsett.com").split(",")
 
-    chats_overall = RateLimiter(int(os.getenv("MESSAGES_PER_DAY", "100")), ONE_DAY)
-    chats_per_minute = RateLimiter(int(os.getenv("TOTAL_MESSAGES_PER_MINUTE", "20")), 60)
-    chat_admission = threading.Lock()
+    budget = create_budget("moonbean")
+    daily_limit = int(os.getenv("MESSAGES_PER_DAY", "100"))
+    minute_limit = int(os.getenv("TOTAL_MESSAGES_PER_MINUTE", "20"))
 
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.add_middleware(
@@ -54,14 +53,17 @@ def create_app():
         question = messages[-1]
         if question["role"] != "user" or len(question["content"]) > MAX_QUESTION_CHARS:
             raise HTTPException(422, f"Questions can be up to {MAX_QUESTION_CHARS} characters.")
-        # Reserve all limits together so concurrent requests cannot take the same slot
-        with chat_admission:
-            if chats_overall.is_blocked("all"):
-                raise HTTPException(429, "Ask Moonbean has hit its daily limit. Try again tomorrow.")
-            if chats_per_minute.is_blocked("all"):
-                raise HTTPException(429, "Moonbean is busy right now. Give it a minute.")
-            chats_overall.record("all")
-            chats_per_minute.record("all")
+        try:
+            blocked = budget.reserve([
+                ("daily", "all", daily_limit, ONE_DAY),
+                ("minute", "all", minute_limit, 60),
+            ])
+        except BudgetUnavailable:
+            raise HTTPException(503, "Moonbean is temporarily unavailable. Try again later.") from None
+        if blocked == "daily":
+            raise HTTPException(429, "Ask Moonbean has hit its daily limit. Try again tomorrow.")
+        if blocked:
+            raise HTTPException(429, "Moonbean is busy right now. Give it a minute.")
 
         def events():
             request_id = uuid.uuid4().hex[:12]
