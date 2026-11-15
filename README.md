@@ -49,7 +49,7 @@ If the handbook doesn't cover something the bot is supposed to say so. It mostly
 | pytest | Python tests |
 | Node 22 test runner | JavaScript streaming and cancellation tests, no frontend framework |
 
-The API allows 20 messages each minute and 100 per rolling day, shared by everyone. It does not trust forwarded addresses for a per person limit. Questions and answers have a max length too. These counters reset when the server restarts and need a single server process. The monthly OpenAI limit is set separately in the dashboard. CORS only controls browsers, so it is not an access restriction.
+The API allows 20 messages each minute and 100 per rolling day, shared by everyone. It does not trust forwarded addresses for a per person limit. Questions and answers have a max length too. When configured with PostgreSQL (below), counters survive restarts and are shared by workers. Local development falls back to memory unless persistence is required. The monthly OpenAI limit is set separately in the dashboard. CORS only controls browsers, so it is not an access restriction.
 
 ## How it is organized
 
@@ -127,7 +127,7 @@ The browser keeps the conversation in memory until you reload. Recent messages g
 
 OpenAI response storage is disabled with `store=False`. That is not a promise of zero provider retention. [OpenAI explains response storage here.](https://developers.openai.com/api/docs/guides/conversation-state)
 
-The free server sleeps when idle, so the first answer can take about a minute. Shared request limits reset on a restart. Anyone can use the public allowance, and sources can be missing or wrong even when the answer sounds confident. Stop ends the browser request but cannot undo provider work already started.
+The free server sleeps when idle, so the first answer can take about a minute. Without the PostgreSQL configuration below, shared request limits reset on a restart. Anyone can use the public allowance, and sources can be missing or wrong even when the answer sounds confident. Stop ends the browser request but cannot undo provider work already started.
 
 This is built to be a small public demo. A real employee handbook system would also need private access, durable usage controls, monitoring and a review of how employee data is handled.
 
@@ -142,3 +142,22 @@ This is built to be a small public demo. A real employee handbook system would a
 ## License
 
 The code is MIT licensed. The photos keep their own licenses, listed above.
+
+### Persistent chat quotas
+
+Production quotas use PostgreSQL via `RATE_LIMIT_DATABASE_URL`. Provision a dedicated
+quota database and app-specific role, run `sql/chat_budget.sql`, and grant that role
+only CONNECT, schema USAGE, and SELECT/INSERT/DELETE on `chat_budget_hits`. Use a TLS
+connection string (`sslmode=require` for Neon). Never reuse the ReachOutt database
+owner password. Set `REQUIRE_PERSISTENT_LIMITS=true` on the deployed service after
+configuring the URL. Missing configuration then stops startup; database failures
+return 503 before any model call, with no in-memory fallback.
+
+Quotas keep rolling windows and reserve all limits in one transaction across
+workers. Requests consume a slot before the model call, including failed or
+disconnected requests. Expired rows are removed on the next request. Visitor
+subjects are HMACs, never raw IPs. Local development without a URL uses memory.
+Deploy only after the schema and restricted runtime credential are configured.
+Verify by consuming a test quota, restarting the app, and confirming it remains
+blocked. To roll back code, retain the database and do not disable the required
+persistence setting.
